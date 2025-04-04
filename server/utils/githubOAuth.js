@@ -1,6 +1,6 @@
-const axios = require('axios');
+import axios from 'axios';
 
-const getGithubAccessToken = async (code) => {
+export const getGithubAccessToken = async (code) => {
   const response = await axios.post('https://github.com/login/oauth/access_token', {
     client_id: process.env.GITHUB_CLIENT_ID,
     client_secret: process.env.GITHUB_CLIENT_SECRET,
@@ -14,7 +14,7 @@ const getGithubAccessToken = async (code) => {
   return response.data.access_token;
 };
 
-const getGithubUserData = async (accessToken) => {
+export const getGithubUserData = async (accessToken) => {
   const response = await axios.get('https://api.github.com/user', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -22,9 +22,4 @@ const getGithubUserData = async (accessToken) => {
   });
 
   return response.data;
-};
-
-module.exports = {
-  getGithubAccessToken,
-  getGithubUserData,
 };

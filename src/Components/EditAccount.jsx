@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { updateUser, deleteUser, clearError } from '../store/userSlice';
+import { fetchUserData, logoutUser } from '../store/authSlice';
 import { usernameValidator, passwordValidator, emailValidator } from '../utils/validators';
+import { defaultAvatar, processImageUrl, resizeImage, avatarImage2 } from '../utils/images';
 import Modal from './ui/Modal';
 import Avatar from 'react-avatar-edit';
 import { toast } from 'react-toastify';
@@ -10,8 +12,9 @@ import { toast } from 'react-toastify';
 const EditAccount = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
-  const { loading, error } = useSelector((state) => state.user);
+  const { user, loading: authLoading, error: authError, isAuthenticated } = useSelector((state) => state.auth);
+  const { loading: userLoading, error: userError } = useSelector((state) => state.user);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -21,27 +24,71 @@ const EditAccount = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(avatarImage2);
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [isDirty, setIsDirty] = useState({
+    username: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
 
+  // Load user data if not present but we have authentication
   useEffect(() => {
-    if (user) {
-      setFormData({
-        username: user.username,
-        email: user.email,
-        password: '',
-        confirmPassword: '',
-      });
+    const loadUserData = async () => {
+      // Only try to load user data if we're authenticated but don't have user data
+      if (isAuthenticated && !user && !authLoading) {
+        try {
+          await dispatch(fetchUserData()).unwrap();
+        } catch (error) {
+          console.error('Failed to load user data:', error);
+          // Only show error toast for non-401 errors
+          if (!error.includes('No valid token')) {
+            toast.error(error || 'Failed to load user data');
+          }
+          navigate('/login');
+        }
+      } else if (!isAuthenticated) {
+        // If not authenticated, just redirect without error
+        navigate('/login');
+      }
+      setIsInitialized(true);
+    };
+
+    loadUserData();
+  }, [user, authLoading, isAuthenticated, dispatch, navigate]);
+
+  // Handle auth errors
+  useEffect(() => {
+    if (authError && !authError.includes('No valid token')) {
+      toast.error(authError);
+      navigate('/login');
     }
-  }, [user]);
+  }, [authError, navigate]);
 
+  // Handle user errors
   useEffect(() => {
-    if (error) {
-      toast.error(error);
+    if (userError) {
+      toast.error(userError);
       dispatch(clearError());
     }
-  }, [error, dispatch]);
+  }, [userError, dispatch]);
+
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        username: user.username || '',
+        email: user.email || '',
+      }));
+      // Process the user's avatar URL to base64
+      if (user.avatar) {
+        processImageUrl(user.avatar).then(setAvatarUrl);
+      }
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,65 +96,168 @@ const EditAccount = () => {
       ...prev,
       [name]: value
     }));
-    // Clear validation error when user types
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    setIsDirty(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    validateField(name, value);
+  };
+
+  const validateField = (name, value) => {
+    let error = null;
+
+    switch (name) {
+      case 'username':
+        if (isDirty.username) {
+          error = usernameValidator(value);
+        }
+        break;
+      case 'email':
+        if (isDirty.email) {
+          error = emailValidator(value);
+        }
+        break;
+      case 'password':
+        if (isDirty.password) {
+          error = passwordValidator(value);
+          // Only check password match if both password fields are filled
+          if (formData.password && formData.confirmPassword) {
+            if (value !== formData.confirmPassword) {
+              setValidationErrors(prev => ({
+                ...prev,
+                confirmPassword: 'Passwords do not match'
+              }));
+            } else {
+              setValidationErrors(prev => ({
+                ...prev,
+                confirmPassword: null
+              }));
+            }
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (isDirty.confirmPassword && formData.password) {
+          error = value !== formData.password ? 'Passwords do not match' : null;
+        }
+        break;
+      default:
+        break;
     }
+
+    return error;
   };
 
   const validateForm = () => {
-    const errors = {};
+    const fields = ['username', 'email'];
     
-    if (!usernameValidator(formData.username)) {
-      errors.username = 'Username must be 2-15 characters and contain only letters, numbers, and underscores';
+    // Only validate password fields if either is filled
+    if (formData.password || formData.confirmPassword) {
+      fields.push('password', 'confirmPassword');
     }
 
-    if (!emailValidator(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
+    const errors = {};
+    let isValid = true;
 
-    if (formData.password && !passwordValidator(formData.password)) {
-      errors.password = 'Password must start with a letter and be 2-14 characters long';
-    }
-
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
+    fields.forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        isValid = false;
+      }
+    });
 
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
+    // Mark all fields as dirty before validation
+    setIsDirty({
+      username: true,
+      email: true,
+      password: Boolean(formData.password),
+      confirmPassword: Boolean(formData.confirmPassword),
+    });
+
+    console.log('Starting form validation...', formData);
     if (!validateForm()) {
+      console.log('Form validation failed:', validationErrors);
+      return;
+    }
+    console.log('Form validation passed');
+
+    // Check if any fields have actually changed, safely handling null user
+    const hasChanges = !user || 
+      formData.username !== user.username ||
+      formData.email !== user.email ||
+      formData.password ||
+      preview;
+
+    if (!hasChanges) {
+      toast.info('No changes to save');
       return;
     }
 
-    try {
-      const updateData = {
-        id: user.id,
-        username: formData.username,
-        email: formData.email,
-      };
+    // If user is null, we can't proceed
+    if (!user) {
+      toast.error('Unable to update profile: User data not loaded');
+      return;
+    }
 
-      if (formData.password) {
-        updateData.password = formData.password;
+    const updateData = {
+      username: formData.username,
+      email: formData.email
+    };
+    
+    if (formData.password) {
+      updateData.password = formData.password;
+    }
+    
+    if (preview) {
+      try {
+        // Resize the image before sending
+        const resizedAvatar = await resizeImage(preview, 400, 400);
+        updateData.avatar = resizedAvatar;
+      } catch (error) {
+        console.error('Failed to resize avatar:', error);
+        toast.error('Failed to process avatar image');
+        return;
       }
+    }
 
-      await dispatch(updateUser(updateData)).unwrap();
-      toast.success('Account updated successfully');
+    console.log('Submitting update with data:', { 
+      ...updateData, 
+      password: updateData.password ? '[REDACTED]' : undefined,
+      avatar: updateData.avatar ? '[BASE64]' : undefined
+    });
+
+    try {
+      const result = await dispatch(updateUser({ id: user.id, ...updateData })).unwrap();
+      console.log('Update successful:', result);
+      
+      if (preview) {
+        setAvatarUrl(preview);
+        setPreview(null);
+      }
+      
+      toast.success('Profile updated successfully');
       setFormData(prev => ({
         ...prev,
         password: '',
-        confirmPassword: '',
+        confirmPassword: ''
       }));
+      setIsDirty(prev => ({
+        ...prev,
+        password: false,
+        confirmPassword: false
+      }));
+      setIsModalOpen(false);
     } catch (error) {
-      toast.error('Failed to update account');
+      console.error('Update failed:', error);
+      toast.error(error?.message || 'Failed to update profile');
     }
   };
 
@@ -116,7 +266,7 @@ const EditAccount = () => {
       try {
         await dispatch(deleteUser(user.id)).unwrap();
         toast.success('Account deleted successfully');
-        navigate('/');
+        navigate('/login');
       } catch (error) {
         toast.error('Failed to delete account');
       }
@@ -127,32 +277,60 @@ const EditAccount = () => {
     setPreview(null);
   };
 
-  const onCrop = (preview) => {
-    setPreview(preview);
+  const onCrop = async (previewUrl) => {
+    setPreview(previewUrl);
   };
 
-  const onSelectFile = (e) => {
-    setSelectedFile(URL.createObjectURL(e.target.files[0]));
-  };
-
-  const handleSaveAvatar = async () => {
-    try {
-      await dispatch(updateUser({
-        id: user.id,
-        avatar: preview
-      })).unwrap();
-      setPreview(null);
-      setIsModalOpen(false);
-      toast.success('Avatar updated successfully');
-    } catch (error) {
-      toast.error('Failed to update avatar');
+  const onBeforeFileLoad = (elem) => {
+    if (elem.target.files[0].size > 5000000) {
+      toast.error('File is too large (max 5MB)');
+      elem.target.value = '';
     }
   };
 
-  if (loading) {
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Failed to logout');
+    }
+  };
+
+  if (!isInitialized || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-4">Please log in to edit your profile.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Saving changes...</p>
+        </div>
       </div>
     );
   }
@@ -164,13 +342,15 @@ const EditAccount = () => {
           <div className="flex items-center space-x-6 mb-8">
             <div className="relative">
               <img
-                src={user.avatar || 'https://via.placeholder.com/150'}
-                alt={user.username}
-                className="w-24 h-24 rounded-full border-4 border-teal-500"
+                src={preview || avatarUrl}
+                alt={user?.username || 'Profile'}
+                className="w-24 h-24 rounded-full border-4 border-teal-500 object-cover"
+                onError={() => setAvatarUrl(defaultAvatar)}
               />
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="absolute bottom-0 right-0 bg-teal-500 text-white rounded-full p-2 hover:bg-teal-600 transition-colors"
+                title="Change avatar"
               >
                 <svg
                   className="w-4 h-4"
@@ -199,16 +379,28 @@ const EditAccount = () => {
             </div>
           </div>
 
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Logout
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
               <input
+                id="username"
                 type="text"
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
+                placeholder={user?.username || 'Enter username'}
+                aria-label="Username"
                 className={`mt-1 block w-full rounded-md shadow-sm ${
                   validationErrors.username
                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -216,21 +408,24 @@ const EditAccount = () => {
                 }`}
               />
               {validationErrors.username && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-red-600" role="alert">
                   {validationErrors.username}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
+                id="email"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                placeholder={user?.email || 'Enter email'}
+                aria-label="Email address"
                 className={`mt-1 block w-full rounded-md shadow-sm ${
                   validationErrors.email
                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -238,22 +433,25 @@ const EditAccount = () => {
                 }`}
               />
               {validationErrors.email && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-red-600" role="alert">
                   {validationErrors.email}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 New Password
               </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  placeholder="Enter new password (optional)"
+                  aria-label="New password"
                   className={`mt-1 block w-full rounded-md shadow-sm ${
                     validationErrors.password
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -264,6 +462,7 @@ const EditAccount = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <svg
                     className={`h-5 w-5 ${
@@ -272,6 +471,7 @@ const EditAccount = () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     {showPassword ? (
                       <path
@@ -292,21 +492,24 @@ const EditAccount = () => {
                 </button>
               </div>
               {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-red-600" role="alert">
                   {validationErrors.password}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm New Password
               </label>
               <input
+                id="confirmPassword"
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
+                placeholder="Confirm new password"
+                aria-label="Confirm new password"
                 className={`mt-1 block w-full rounded-md shadow-sm ${
                   validationErrors.confirmPassword
                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -314,7 +517,7 @@ const EditAccount = () => {
                 }`}
               />
               {validationErrors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-red-600" role="alert">
                   {validationErrors.confirmPassword}
                 </p>
               )}
@@ -323,15 +526,15 @@ const EditAccount = () => {
             <div className="flex justify-between">
               <button
                 type="submit"
-                className="btn-primary"
-                disabled={loading}
+                disabled={userLoading}
+                className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {userLoading ? 'Saving...' : 'Save Changes'}
               </button>
               <button
                 type="button"
                 onClick={handleDeleteAccount}
-                className="btn bg-red-500 hover:bg-red-600 text-white"
+                className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 Delete Account
               </button>
@@ -343,39 +546,27 @@ const EditAccount = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-4">Update Avatar</h2>
-          {selectedFile ? (
-            <div>
-              <Avatar
-                width={150}
-                height={150}
-                onCrop={onCrop}
-                onClose={onClose}
-                src={selectedFile}
-              />
-              <button
-                onClick={handleSaveAvatar}
-                className="btn-primary mt-4"
-              >
-                Set Avatar
-              </button>
-            </div>
-          ) : (
-            <div className="text-center">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={onSelectFile}
-                className="hidden"
-                id="avatar-input"
-              />
-              <label
-                htmlFor="avatar-input"
-                className="btn-primary cursor-pointer inline-block"
-              >
-                Choose Image
-              </label>
-            </div>
-          )}
+          <Avatar
+            width={400}
+            height={300}
+            onCrop={onCrop}
+            onClose={onClose}
+            onBeforeFileLoad={onBeforeFileLoad}
+            label="Choose an image"
+          />
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleSubmit}
+              disabled={!preview}
+              className={`ml-3 inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                preview
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-gray-400 cursor-not-allowed'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              Save Avatar
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

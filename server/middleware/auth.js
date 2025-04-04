@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+import jwt from 'jsonwebtoken';
+import { User } from '../models/index.js';
 
-module.exports = async (req, res, next) => {
+const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -46,3 +46,5 @@ module.exports = async (req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export default auth;

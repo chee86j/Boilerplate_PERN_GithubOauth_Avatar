@@ -1,14 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/authSlice';
+import { logoutUser } from '../store/authSlice';
+import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Failed to logout');
+    }
   };
 
   return (
@@ -19,22 +28,43 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {!loading && (
             <>
-              <Link to="/profile" className="hover:text-gray-300">
-                Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded"
-              >
-                Logout
-              </button>
+              {isAuthenticated && user ? (
+                <>
+                  <Link 
+                    to="/profile" 
+                    className="hover:text-gray-300 flex items-center"
+                  >
+                    {user.avatar && (
+                      <img 
+                        src={user.avatar} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full mr-2"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span>{user.username}</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors duration-200"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  to="/login" 
+                  className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition-colors duration-200"
+                >
+                  Sign In
+                </Link>
+              )}
             </>
-          ) : (
-            <Link to="/login" className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
-              Login
-            </Link>
           )}
         </div>
       </div>

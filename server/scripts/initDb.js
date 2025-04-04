@@ -1,29 +1,15 @@
-const path = require('path');
-const sequelize = require('../config/db');
-const models = require('../models');
+import sequelize from '../config/db.js';
+import { User } from '../models/index.js';
 
 async function initializeDatabase() {
   try {
-    console.log('🔄 Starting database initialization...');
+    // Force sync will drop existing tables and recreate them
+    await sequelize.sync({ force: true });
+    console.log('✅ Database synchronized successfully');
     
-    // Test the connection
-    console.log('🔌 Testing database connection...');
-    await sequelize.authenticate();
-    console.log('✅ Database connection established successfully.');
-    
-    // Sync all models
-    console.log('📊 Syncing database models...');
-    await sequelize.sync({ alter: true });
-    console.log('✅ Database models synchronized successfully.');
-    
-    // Log available models
-    console.log('📝 Available models:', Object.keys(models).join(', '));
-    
-    console.log('🎉 Database initialization completed successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ Error initializing database:', error);
     process.exit(1);
   }
 }

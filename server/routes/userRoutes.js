@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
+import { updateUser, deleteUser, getUserProfile } from '../controllers/userController.js';
+import auth from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
+import { User } from '../models/index.js';
+
 const router = express.Router();
-const { updateUser, deleteUser, getUserProfile } = require('../controllers/userController');
-const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
 
 // Get user profile
 router.get('/profile', auth, getUserProfile);
@@ -30,4 +32,4 @@ router.put('/avatar', auth, upload.single('avatar'), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

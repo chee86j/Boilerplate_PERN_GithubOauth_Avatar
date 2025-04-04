@@ -1,9 +1,7 @@
-const User = require('./User');
+import User from './User.js';
 
 // Export all models
-module.exports = {
-  User
-};
+export { User };
 
 // Add any model associations here
 // Example: User.hasMany(Posts); 

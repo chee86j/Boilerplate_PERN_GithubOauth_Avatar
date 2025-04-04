@@ -24,6 +24,7 @@
     "pg": "8.14.1",
     "postcss": "8.5.3",
     "react": "18.2.0",
+    "react-avatar-edit": "^1.2.0",
     "react-dom": "18.2.0",
     "react-redux": "9.2.0",
     "react-router-dom": "7.4.1",
