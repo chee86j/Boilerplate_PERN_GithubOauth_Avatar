@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { setCredentials } from '../store/authSlice';
 import { GithubIcon } from 'lucide-react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import { setCredentials } from '../../store/authSlice';
+import { login as loginUser, register as registerUser } from '../../utils/api';
 
 const LoginRegister = () => {
   const location = useLocation();
@@ -35,19 +35,20 @@ const LoginRegister = () => {
         return;
       }
 
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const requestData = isLogin 
+      const requestData = isLogin
         ? { email: formData.email, password: formData.password }
         : { username: formData.username, email: formData.email, password: formData.password };
 
-      const response = await axios.post(`http://localhost:3001${endpoint}`, requestData);
+      // Route all auth calls through the shared API adapter so headers, tokens, and future client swaps stay centralized.
+      const { token, user } = isLogin
+        ? await loginUser(requestData)
+        : await registerUser(requestData);
 
-      const { token, user } = response.data;
       dispatch(setCredentials({ token, user }));
       toast.success(isLogin ? 'Successfully logged in!' : 'Successfully registered!');
       navigate('/');
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'An error occurred';
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
       console.error('Auth error:', error);
       toast.error(errorMessage);
     } finally {

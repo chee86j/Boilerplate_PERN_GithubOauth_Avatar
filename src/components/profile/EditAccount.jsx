@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { updateUser, deleteUser, clearError } from '../store/userSlice';
-import { fetchUserData, logoutUser } from '../store/authSlice';
-import { usernameValidator, passwordValidator, emailValidator } from '../utils/validators';
-import { defaultAvatar, processImageUrl, resizeImage, avatarImage2 } from '../utils/images';
-import Modal from './ui/Modal';
+import { updateUser, deleteUser, clearError } from '../../store/userSlice';
+import { fetchUserData, logoutUser } from '../../store/authSlice';
+import { usernameValidator, passwordValidator, emailValidator } from '../../utils/validators';
+import { defaultAvatar, processImageUrl, resizeImage, avatarImage2 } from '../../utils/images';
+import Modal from '../ui/Modal';
 import Avatar from 'react-avatar-edit';
 import { toast } from 'react-toastify';
 
+// Keep the profile feature self-contained (validation, avatar handling, persistence) so routes can stay thin.
 const EditAccount = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setCredentials, fetchUserData } from '../store/authSlice';
+import { setCredentials, fetchUserData } from '../../store/authSlice';
 import { toast } from 'react-toastify';
 
 const GithubCallback = () => {
@@ -29,7 +29,6 @@ const GithubCallback = () => {
           return;
         }
 
-        // Store token and fetch user data
         await dispatch(setCredentials({ token }));
         const resultAction = await dispatch(fetchUserData());
 
@@ -40,6 +39,7 @@ const GithubCallback = () => {
           throw new Error(resultAction.error?.message || 'Failed to fetch user data');
         }
       } catch (error) {
+        // Keep OAuth orchestration small and focused so callback handling stays testable.
         console.error('Error handling callback:', error);
         toast.error('Failed to complete sign in. Please try again.');
         navigate('/login?error=callback_failed');
@@ -52,8 +52,8 @@ const GithubCallback = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="text-center">
-        <div 
-          className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto" 
+        <div
+          className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto"
           role="progressbar"
           aria-label="Loading"
         />
@@ -65,4 +65,4 @@ const GithubCallback = () => {
   );
 };
 
-export default GithubCallback; 
+export default GithubCallback;
