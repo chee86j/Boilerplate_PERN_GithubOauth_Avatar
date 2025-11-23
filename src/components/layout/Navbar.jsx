@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logoutUser } from '../store/authSlice';
+import { logoutUser } from '../../store/authSlice';
 import { toast } from 'react-toastify';
 
 const Navbar = () => {
@@ -26,20 +26,20 @@ const Navbar = () => {
         <Link to="/" className="text-xl font-bold">
           GitHub OAuth App
         </Link>
-        
+
         <div className="flex items-center space-x-4">
           {!loading && (
             <>
               {isAuthenticated && user ? (
                 <>
-                  <Link 
-                    to="/profile" 
+                  <Link
+                    to="/profile"
                     className="hover:text-gray-300 flex items-center"
                   >
                     {user.avatar && (
-                      <img 
-                        src={user.avatar} 
-                        alt="Profile" 
+                      <img
+                        src={user.avatar}
+                        alt="Profile"
                         className="w-8 h-8 rounded-full mr-2"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -57,8 +57,8 @@ const Navbar = () => {
                   </button>
                 </>
               ) : (
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition-colors duration-200"
                 >
                   Sign In

@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Centralized HTTP adapter keeps transport concerns out of components and makes client swaps trivial.
 const api = axios.create({
   baseURL: 'http://localhost:3001/api',
   withCredentials: true,

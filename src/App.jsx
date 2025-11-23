@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from './store';
-import Navbar from './Components/Navbar';
-import Home from './Components/Home';
-import LoginRegister from './Components/LoginRegister';
-import EditAccount from './Components/EditAccount';
-import GithubCallback from './Components/GithubCallback';
-import AuthProvider from './components/AuthProvider';
 import { ToastContainer } from 'react-toastify';
+import { store } from './store';
+import Navbar from './components/layout/Navbar';
+import Home from './components/home/Home';
+import LoginRegister from './components/auth/LoginRegister';
+import EditAccount from './components/profile/EditAccount';
+import GithubCallback from './components/auth/GithubCallback';
+import AuthProvider from './components/auth/AuthProvider';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/index.css';
 
