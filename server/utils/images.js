@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-/**
+/*
  * Convert a base64 data URL to a Buffer
  * @param {string} dataUrl - The base64 data URL to convert
  * @returns {Buffer} The resulting Buffer
@@ -12,7 +12,7 @@ export const dataUrlToBuffer = (dataUrl) => {
   return Buffer.from(base64Data, 'base64');
 };
 
-/**
+/*
  * Save an image from a base64 data URL
  * @param {string} dataUrl - The base64 data URL of the image
  * @param {string} uploadDir - The directory to save the image in
@@ -40,7 +40,7 @@ export const saveImage = async (dataUrl, uploadDir, fileName) => {
   }
 };
 
-/**
+/*
  * Delete a file if it exists
  * @param {string} filePath - The path to the file to delete
  * @returns {Promise<void>}
@@ -58,7 +58,7 @@ export const deleteFile = async (filePath) => {
   }
 };
 
-/**
+/*
  * Get the MIME type from a data URL
  * @param {string} dataUrl - The data URL to extract the MIME type from
  * @returns {string} The MIME type
@@ -71,7 +71,7 @@ export const getMimeType = (dataUrl) => {
   return matches[1];
 };
 
-/**
+/*
  * Validate an image data URL
  * @param {string} dataUrl - The data URL to validate
  * @returns {boolean} Whether the data URL is valid

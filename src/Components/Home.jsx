@@ -47,13 +47,15 @@ const Home = () => {
                   <UserIcon size={20} />
                   <span>View Profile</span>
                 </Link>
-                <Link
-                  to="/settings"
+                <a
+                  href="https://github.com/settings/profile"
+                  target="_blank"
+                  rel="noreferrer"
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors duration-200"
                 >
                   <GithubIcon size={20} />
                   <span>GitHub Settings</span>
-                </Link>
+                </a>
               </div>
 
               {/* Recent Activity or Stats */}

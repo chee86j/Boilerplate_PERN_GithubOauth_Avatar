@@ -33,6 +33,28 @@ const EditAccount = () => {
     password: false,
     confirmPassword: false,
   });
+  const inputBaseClasses = 'mt-1 block w-full rounded-md shadow-sm';
+  const inputErrorClasses = 'border-red-500 focus:border-red-500 focus:ring-red-500';
+  const inputDefaultClasses = 'border-gray-300 focus:border-teal-500 focus:ring-teal-500';
+  const passwordToggleIconClasses = [
+    'h-5 w-5',
+    showPassword && 'text-gray-400',
+    !showPassword && 'text-gray-500'
+  ].filter(Boolean).join(' ');
+  const saveAvatarButtonClasses = [
+    'ml-3 inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
+    preview && 'bg-blue-600 hover:bg-blue-700',
+    !preview && 'bg-gray-400 cursor-not-allowed',
+    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+  ].filter(Boolean).join(' ');
+
+  const getInputClasses = (hasError) => {
+    if (hasError) {
+      return `${inputBaseClasses} ${inputErrorClasses}`;
+    }
+
+    return `${inputBaseClasses} ${inputDefaultClasses}`;
+  };
 
   // Load user data if not present but we have authentication
   useEffect(() => {
@@ -401,11 +423,7 @@ const EditAccount = () => {
                 onChange={handleInputChange}
                 placeholder={user?.username || 'Enter username'}
                 aria-label="Username"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  validationErrors.username
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'
-                }`}
+                className={getInputClasses(validationErrors.username)}
               />
               {validationErrors.username && (
                 <p className="mt-1 text-sm text-red-600" role="alert">
@@ -426,11 +444,7 @@ const EditAccount = () => {
                 onChange={handleInputChange}
                 placeholder={user?.email || 'Enter email'}
                 aria-label="Email address"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  validationErrors.email
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'
-                }`}
+                className={getInputClasses(validationErrors.email)}
               />
               {validationErrors.email && (
                 <p className="mt-1 text-sm text-red-600" role="alert">
@@ -452,11 +466,7 @@ const EditAccount = () => {
                   onChange={handleInputChange}
                   placeholder="Enter new password (optional)"
                   aria-label="New password"
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    validationErrors.password
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'
-                  }`}
+                  className={getInputClasses(validationErrors.password)}
                 />
                 <button
                   type="button"
@@ -465,9 +475,7 @@ const EditAccount = () => {
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <svg
-                    className={`h-5 w-5 ${
-                      showPassword ? 'text-gray-400' : 'text-gray-500'
-                    }`}
+                    className={passwordToggleIconClasses}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -510,11 +518,7 @@ const EditAccount = () => {
                 onChange={handleInputChange}
                 placeholder="Confirm new password"
                 aria-label="Confirm new password"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  validationErrors.confirmPassword
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'
-                }`}
+                className={getInputClasses(validationErrors.confirmPassword)}
               />
               {validationErrors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600" role="alert">
@@ -558,11 +562,7 @@ const EditAccount = () => {
             <button
               onClick={handleSubmit}
               disabled={!preview}
-              className={`ml-3 inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                preview
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-gray-400 cursor-not-allowed'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              className={saveAvatarButtonClasses}
             >
               Save Avatar
             </button>

@@ -1,4 +1,4 @@
-/**
+/*
  * Validates a username
  * @param {string} username - The username to validate
  * @returns {string|null} Error message if invalid, null if valid
@@ -11,7 +11,7 @@ export const usernameValidator = (username) => {
   return null;
 };
 
-/**
+/*
  * Validates a password
  * @param {string} password - The password to validate
  * @returns {string|null} Error message if invalid, null if valid
@@ -26,7 +26,7 @@ export const passwordValidator = (password) => {
   return null;
 };
 
-/**
+/*
  * Validates an email address
  * @param {string} email - The email to validate
  * @returns {string|null} Error message if invalid, null if valid

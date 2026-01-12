@@ -8,7 +8,7 @@ export const avatarImage3 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL
 // Set avatarImage2 as the default avatar
 export const defaultAvatar = avatarImage2;
 
-/**
+/*
  * Convert a data URL to a Blob object
  * @param {string} dataUrl - The data URL to convert
  * @returns {Blob} The resulting Blob object
@@ -25,7 +25,7 @@ export const dataUrlToBlob = (dataUrl) => {
   return new Blob([u8arr], { type: mime });
 };
 
-/**
+/*
  * Convert a Blob to a base64 string
  * @param {Blob} blob - The Blob to convert
  * @returns {Promise<string>} A promise that resolves with the base64 string
@@ -39,7 +39,7 @@ export const blobToBase64 = (blob) => {
   });
 };
 
-/**
+/*
  * Convert a File or Blob to base64
  * @param {File|Blob} file - The file to convert
  * @returns {Promise<string>} A promise that resolves with the base64 string
@@ -53,7 +53,7 @@ export const fileToBase64 = (file) => {
   });
 };
 
-/**
+/*
  * Validate and process an image URL to base64
  * @param {string} url - The image URL to process
  * @returns {Promise<string>} A promise that resolves with the base64 string or default avatar
@@ -72,7 +72,7 @@ export const processImageUrl = async (url) => {
   }
 };
 
-/**
+/*
  * Resize an image maintaining aspect ratio
  * @param {string} base64 - The base64 string of the image
  * @param {number} maxWidth - Maximum width of the resized image
