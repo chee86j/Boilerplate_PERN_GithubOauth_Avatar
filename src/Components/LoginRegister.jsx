@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { setCredentials } from '../store/authSlice';
 import { GithubIcon } from 'lucide-react';
-import axios from 'axios';
+import { login, register } from '../utils/api';
 import { toast } from 'react-toastify';
 
 const LoginRegister = () => {
@@ -35,14 +35,13 @@ const LoginRegister = () => {
         return;
       }
 
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const requestData = isLogin 
+      const requestData = isLogin
         ? { email: formData.email, password: formData.password }
         : { username: formData.username, email: formData.email, password: formData.password };
-
-      const response = await axios.post(`http://localhost:3001${endpoint}`, requestData);
-
-      const { token, user } = response.data;
+      const authResponse = isLogin
+        ? await login(requestData)
+        : await register(requestData);
+      const { token, user } = authResponse;
       dispatch(setCredentials({ token, user }));
       toast.success(isLogin ? 'Successfully logged in!' : 'Successfully registered!');
       navigate('/');
